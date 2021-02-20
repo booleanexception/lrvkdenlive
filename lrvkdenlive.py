@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
-import hashlib
-import os
-import sys
-import shutil
+import hashlib # for md5
+import os # for listdir
+import sys # for args
+import shutil # for copy2
+import pwd # for OS username
 
-to_path = "/home/basel/.cache/kdenlive/proxy"
+
+#where to copy the files, should be ok
+to_path = "/home/"+pwd.getpwuid(os.getuid()).pw_name+"/.cache/kdenlive/proxy"
 
 
 if len(sys.argv) != 2:
@@ -48,5 +51,9 @@ for file in os.listdir(from_path):
 
     proxy_file = to_path+"/"+hash+".mkv"
 
-    print("[2] Copying "+lrv_file+" -> "+proxy_file)
+    if os.path.isfile(proxy_file):
+        print("[1.1] "+mp4_file+" already exists")
+        continue
+
+    print("[2] >>> Copying "+lrv_file+" -> "+proxy_file)
     shutil.copy2(lrv_file, proxy_file)
