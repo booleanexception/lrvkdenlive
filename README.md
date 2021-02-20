@@ -4,6 +4,10 @@
 
 LRV to Kdenlive, transfer GoPros Low Resolution Videos to Kdenlive without re-rendering
 
+./lrvkdenlive /path/to/gopro/videos
+
+/path/to/gopro/videos/GP<054321>.LRV >>> /home/<username>/.cache/kdenlive/proxy/<hash>.mkv
+
 When recording with GoPros you always get a high resolution "MP4" file and a low resolution "LRV" file. The high resolution MP4 file is too heavy in video editing software for most private computers, so most programs generate a so-called "proxy clip" of the MP4 files -- another re-rendered file in very low resolution.
 
 ##Why
