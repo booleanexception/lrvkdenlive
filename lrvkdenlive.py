@@ -1,59 +1,52 @@
 #!/usr/bin/env python3
 
 import hashlib # for md5
-import os # for listdir
 import sys # for args
 import shutil # for copy2
-import pwd # for OS username
 
+from pathlib import Path
 
 #where to copy the files, should be ok
-to_path = "/home/"+pwd.getpwuid(os.getuid()).pw_name+"/.cache/kdenlive/proxy"
+to_path = Path(Path.home() / ".cache/kdenlive/proxy")
 
 
 if len(sys.argv) != 2:
-    print("Syntax: lrvkdenlive /from/path/ /to/path/")
+    print("Syntax: lrvkdenlive /from/path/ ")
     print("- GoPro LRV to kdenlive proxy clips")
     print("- Copies GoPros Low Resolution Video files to the Proxy Clips folder of the FOSS video editing software kdenlive")
     exit()
 
-from_path = sys.argv[1]
+from_path = Path(sys.argv[1])
 
+for lrv_file in from_path.glob('*.LRV'):
+    mp4_file = next(lrv_file.parent.glob('*' + lrv_file.stem[2:] + '.MP4'))
 
-for path, subdirs, files in os.walk(from_path):
-    for file in files:
+    if not mp4_file.exists():
+        print(f"[0.1] found LRV, but {mp4_file.name} does not exist")
+        continue
 
-        if not file.endswith(".LRV"):
-            continue
+    filesize = mp4_file.stat().st_size
 
-        lrv_file = path+"/"+file
-        mp4_file = path+"/"+(file[:-3]+"MP4")
+    if filesize <= 2000000:
+        print(f"[0.2] {mp4_file.name} is too small, skipping")
+        continue
 
-        if not os.path.isfile(mp4_file):
-            print("[0.1] found LRV, but "+mp4_file+" does not exist in same folder?")
-            continue
+    with mp4_file.open("rb") as f:
+        fdata = f.read(1000000)
 
-        filesize = os.stat(mp4_file).st_size
+        f.seek(filesize - 1000000)
+        fdata += f.read(1000000)
 
-        if filesize <= 2000000:
-            print("[0.2] "+mp4_file+" is too small, skipping")
-            continue
+        result = hashlib.md5(fdata)
 
-        with open(mp4_file, "rb") as f:
-            fdata = f.read(1000000)
-            
-            f.seek(filesize - 1000000)
-            fdata += f.read(1000000)
-            
-            result = hashlib.md5(fdata)
+    hash = result.hexdigest()
 
-        hash = result.hexdigest()
+    proxy_file = to_path / (hash + '.mkv') # kdenlive only considers mkvs?
 
-        proxy_file = to_path+"/"+hash+".mkv"
+    if proxy_file.exists():
+        print(f"[1.1] {mp4_file.name} already proxied")
+        continue
 
-        if os.path.isfile(proxy_file):
-            print("[1.1] "+mp4_file+" already proxied")
-            continue
+    print(f"[2] >>> Copying {lrv_file.name} -> {proxy_file.name}")
 
-        print("[2] >>> Copying "+lrv_file+" -> "+proxy_file)
-        shutil.copy2(lrv_file, proxy_file)
+    shutil.copy2(lrv_file, proxy_file)
